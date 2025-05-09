@@ -1,0 +1,68 @@
+import pandas as pd
+import numpy as np
+
+# Create a function to generate mock data
+def generate_mock_data(n_rows_per_year=10):
+    # Set random seed for reproducibility
+    np.random.seed(42)
+    
+    # Istanbul's approximate bounding box
+    min_lat, max_lat = 40.8, 41.3
+    min_lon, max_lon = 28.5, 29.5
+    
+    # Define years: August of 2000, 2005, 2010, 2015, 2020, 2024
+    years = [2000, 2005, 2010, 2015, 2020, 2024]
+    
+    # Create empty list to store all rows
+    all_data = []
+    
+    # Create data for each year
+    for year in years:
+        # Generate random coordinates within Istanbul's bounds
+        lat = np.random.uniform(min_lat, max_lat, n_rows_per_year)
+        lon = np.random.uniform(min_lon, max_lon, n_rows_per_year)
+        
+        # Generate realistic NDVI values
+        # NDVI ranges from -1 to 1, with vegetation typically 0.2 to 0.8
+        # Add a slight trend of decreasing vegetation over time
+        base_ndvi = np.random.uniform(-0.1, 0.8, n_rows_per_year)
+        year_effect = max(0, (2024 - year) / 100)  # More vegetation in earlier years
+        ndvi = np.clip(base_ndvi + year_effect, -1, 1)
+        
+        # Generate realistic NDBI values
+        # NDBI typically ranges from -1 to 1, with built-up areas having positive values
+        # Add a slight trend of increasing built-up areas over time
+        base_ndbi = np.random.uniform(-0.4, 0.6, n_rows_per_year)
+        year_effect = max(0, (year - 2000) / 150)  # More urbanization in later years
+        ndbi = np.clip(base_ndbi + year_effect, -1, 1)
+        
+        # UHI classes (1: Low, 2: Moderate Low, 3: Moderate, 4: High, 5: Very High)
+        # Make UHI class correlate with NDVI (negative) and NDBI (positive)
+        # Also add a slight increasing trend over time
+        uhi_base = 1 + ((1 - ndvi) * 2) + (ndbi * 2) + ((year - 2000) / 150)
+        uhi_class = np.clip(np.round(uhi_base), 1, 5).astype(int)
+        
+        # Append year's data to all_data
+        for i in range(n_rows_per_year):
+            all_data.append({
+                'lat': lat[i],
+                'lon': lon[i],
+                'year': year,
+                'NDVI': round(ndvi[i], 3),
+                'NDBI': round(ndbi[i], 3),
+                'UHI_class': uhi_class[i]
+            })
+    
+    # Create dataframe from all data
+    df = pd.DataFrame(all_data)
+    
+    return df
+
+# Generate mock data (10 points for each of the 6 years = 60 total rows)
+mock_data = generate_mock_data(10)
+
+# Save to CSV
+mock_data.to_csv('mock_data.csv', index=False)
+
+# Display first few rows
+print(mock_data.head(15))
